@@ -1,0 +1,28 @@
+html, body {
+  padding: 0;
+  margin: 0;
+  font-size: 20px;
+}
+
+#app {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 1em;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#start, #test, #end {
+  display: none;
+  text-align: center;
+}
+
+#app.start #start,
+#app.test #test,
+#app.end #end {
+  display: block;
+}

@@ -2,22 +2,42 @@
  * Configuration
  */
 
-var trials = [1,3,2,8,3],
+var trials = [1,3,2,8,3,6],
+
+    // Index into trials array of first trial in the "after notification" section
+    afterIndex = 3,
 
     // Time each number is shown on the screen
     trialTime = 1200,
 
+    // Track whether we are before or after the sms notification
+    beforeOrAfter = 'before',
+
+    // Stats are separated into before and after the sms notification which
+    // occurs half way through the test
+    stats = {
+      before: {
+        goodResponseTimes: [],
+        badResponseTimes: [],
+        badPresses: 0, // Number of times the user incorrectly presses the button
+        missedPresses: 0 // Number of times the user should've pressed the button but didn't
+      },
+      after: {
+        goodResponseTimes: [],
+        badResponseTimes: [],
+        badPresses: 0,
+        missedPresses: 0
+      }
+    },
+
     // Index intro trials array for next number to show during the test
     currentTrial = 0,
 
-    // Number of times the user incorrectly presses the button
-    badPresses = 0,
-
-    // Number of times the user should've pressed the button but didn't
-    missedPresses = 0,
-
     // Track when the button is pressed
-    buttonPressed = true;
+    buttonPressed = true,
+
+    // Trial start time; used to calculate response time
+    trialStartTime;
 
 setup();
 
@@ -37,7 +57,18 @@ function run(){
   // Check if spacebar was pressed
   $(window).keypress(function (e) {
     if (e.keyCode === 0 || e.keyCode === 32) {
-      buttonPressed = true;
+
+      // Record the response time for the first button press
+      if(!buttonPressed){
+        buttonPressed = true;
+        var responseTime = Date.now() - trialStartTime;
+        if(trials[currentTrial] === 3){
+          stats[beforeOrAfter].goodResponseTimes.push(responseTime);
+        } else {
+          stats[beforeOrAfter].badResponseTimes.push(responseTime);
+        }
+      }
+
     }
   });
 
@@ -52,6 +83,11 @@ function showTrial(){
 
   // Reset state
   buttonPressed = false;
+  trialStartTime = Date.now();
+
+  if(currentTrial === afterIndex){
+    beforeOrAfter = 'after';
+  }
 
   // We're done when we're at the end of the array
   if(currentTrial === trials.length){
@@ -70,9 +106,9 @@ function showTrial(){
 
       // Should they have pressed the button?
       if(trials[currentTrial] === 3 && buttonPressed === false){
-        missedPresses++;
+        stats[beforeOrAfter].missedPresses++;
       } else if(trials[currentTrial] !== 3 && buttonPressed === true){
-        badPresses++;
+        stats[beforeOrAfter].badPresses++;
       }
 
       // Show the next trial
@@ -87,6 +123,38 @@ function showTrial(){
  */
 function end(){
   $('#app').removeClass('test').addClass('end');
+  $('#results').html([
+    '<h3>Before</h3>',
+    statsTable(stats.before),
+    '<h3>After</h3>',
+    statsTable(stats.after)
+  ].join(''));
+}
 
-  $('#results').text(`Bad Presses: ${badPresses}\nMissed Presses: ${missedPresses}`);
+/**
+ * Generate an HTML table of the stats
+ *
+ */
+function statsTable(stats){
+  return valueTable({
+    'Mean Response Time (ms)': ss.mean(stats.goodResponseTimes.concat(stats.badResponseTimes)) || 0,
+    'Mean Good Response Time (ms)': ss.mean(stats.goodResponseTimes) || 0,
+    'Mean Bad Response Time (ms)': ss.mean(stats.badResponseTimes) || 0,
+    'Bad Presses': stats.badPresses,
+    'Missed Presses': stats.missedPresses
+  });
+}
+
+/**
+ * Generate a simple key:value pair HTML table
+ *
+ * @param {Object} values
+ * @return {String} html
+ */
+function valueTable(values){
+  var html = '<table>';
+  for(var key in values){
+    html += `<tr><th>${key}</th><td>${values[key]}</td></tr>`;
+  }
+  return html += '</table>';
 }

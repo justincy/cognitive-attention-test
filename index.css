@@ -26,3 +26,8 @@ html, body {
 #app.end #end {
   display: block;
 }
+
+#results {
+  text-align: left;
+  font-size: smaller;
+}

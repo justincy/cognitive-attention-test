@@ -42,7 +42,11 @@ var DEV = document.location.search.indexOf('dev') !== -1,
     buttonPressed = true,
 
     // Trial start time; used to calculate response time
-    trialStartTime;
+    trialStartTime,
+
+    // Allow us to cancel the show trial timer when the user presses the button
+    // so that we can display the next trial early
+    showTrialTimer;
 
 setup();
 
@@ -64,7 +68,7 @@ function run(){
     if (e.keyCode === 0 || e.keyCode === 32) {
 
       // Record the response time for the first button press
-      if(!buttonPressed && beforeOrAfter !== 'middle'){
+      if(beforeOrAfter !== 'middle'){
         buttonPressed = true;
         var responseTime = Date.now() - trialStartTime;
         if(trials[currentTrial] === 3){
@@ -73,6 +77,9 @@ function run(){
           stats[beforeOrAfter].badResponseTimes.push(responseTime);
         }
       }
+
+      // Move to next trial when the button is pressed
+      endTrial();
 
     }
   });
@@ -85,6 +92,10 @@ function run(){
  * Show a trial (number) on the screen and set a timer for the next one
  */
 function showTrial(){
+
+  if(showTrialTimer){
+    clearTimeout(showTrialTimer);
+  }
 
   // Reset state
   buttonPressed = false;
@@ -107,24 +118,28 @@ function showTrial(){
   // Display the next number
   $('#trial').text(trials[beforeOrAfter][currentTrial]);
 
-  // Setup event to run when trial is over. Calculate whether there was a
-  // bad or missed button press. Then show the next trial.
-  setTimeout(function(){
-
-    // Should they have pressed the button?
-    if(beforeOrAfter !== 'middle'){
-      if(trials[beforeOrAfter][currentTrial] === 3 && buttonPressed === false){
-        stats[beforeOrAfter].missedPresses++;
-      } else if(trials[beforeOrAfter][currentTrial] !== 3 && buttonPressed === true){
-        stats[beforeOrAfter].badPresses++;
-      }
-    }
-
-    // Show the next trial
-    currentTrial++;
-    showTrial();
-  }, trialTime);
+  // Setup event to run when trial is over
+  showTrialTimer = setTimeout(endTrial, trialTime);
 }
+
+/**
+ * End the trial, record some data, prepare for next trial
+ */
+ function endTrial(){
+
+   // Should they have pressed the button?
+   if(beforeOrAfter !== 'middle'){
+     if(trials[beforeOrAfter][currentTrial] === 3 && buttonPressed === false){
+       stats[beforeOrAfter].missedPresses++;
+     } else if(trials[beforeOrAfter][currentTrial] !== 3 && buttonPressed === true){
+       stats[beforeOrAfter].badPresses++;
+     }
+   }
+
+   // Show the next trial
+   currentTrial++;
+   showTrial();
+ }
 
 /**
  * Display the end screen and test results

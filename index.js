@@ -2,16 +2,22 @@
  * Configuration
  */
 
-var trials = [1,3,2,8,3,6],
-
-    // Index into trials array of first trial in the "after notification" section
-    afterIndex = 3,
-
-    // Time each number is shown on the screen
-    trialTime = 1200,
+var trials = {
+      before: [1,3,2],
+      middle: [4,3],
+      after: [8,3,6]
+    },
 
     // Track whether we are before or after the sms notification
+    // May also have the value of 'middle' for the interval we're not measuring
+    // during which the sms notification is being sent
     beforeOrAfter = 'before',
+
+    // Index intro trials array for next number to show during the test
+    currentTrial = 0,
+
+    // Time each number is shown on the screen
+    trialTime = 2500,
 
     // Stats are separated into before and after the sms notification which
     // occurs half way through the test
@@ -29,9 +35,6 @@ var trials = [1,3,2,8,3,6],
         missedPresses: 0
       }
     },
-
-    // Index intro trials array for next number to show during the test
-    currentTrial = 0,
 
     // Track when the button is pressed
     buttonPressed = true,
@@ -59,7 +62,7 @@ function run(){
     if (e.keyCode === 0 || e.keyCode === 32) {
 
       // Record the response time for the first button press
-      if(!buttonPressed){
+      if(!buttonPressed && beforeOrAfter !== 'middle'){
         buttonPressed = true;
         var responseTime = Date.now() - trialStartTime;
         if(trials[currentTrial] === 3){
@@ -85,37 +88,40 @@ function showTrial(){
   buttonPressed = false;
   trialStartTime = Date.now();
 
-  if(currentTrial === afterIndex){
-    beforeOrAfter = 'after';
+  // Advance the state when necessary
+  if(currentTrial === trials[beforeOrAfter].length){
+    if(beforeOrAfter === 'before'){
+      beforeOrAfter = 'middle';
+      currentTrial = 0;
+    } else if(beforeOrAfter === 'middle'){
+      beforeOrAfter = 'after';
+      currentTrial = 0;
+    } else {
+      end();
+      return;
+    }
   }
 
-  // We're done when we're at the end of the array
-  if(currentTrial === trials.length){
-    end();
-  }
+  // Display the next number
+  $('#trial').text(trials[beforeOrAfter][currentTrial]);
 
-  // Not done...
-  else {
+  // Setup event to run when trial is over. Calculate whether there was a
+  // bad or missed button press. Then show the next trial.
+  setTimeout(function(){
 
-    // Display the next number
-    $('#trial').text(trials[currentTrial]);
-
-    // Setup event to run when trial is over. Calculate whether there was a
-    // bad or missed button press. Then show the next trial.
-    setTimeout(function(){
-
-      // Should they have pressed the button?
-      if(trials[currentTrial] === 3 && buttonPressed === false){
+    // Should they have pressed the button?
+    if(beforeOrAfter !== 'middle'){
+      if(trials[beforeOrAfter][currentTrial] === 3 && buttonPressed === false){
         stats[beforeOrAfter].missedPresses++;
-      } else if(trials[currentTrial] !== 3 && buttonPressed === true){
+      } else if(trials[beforeOrAfter][currentTrial] !== 3 && buttonPressed === true){
         stats[beforeOrAfter].badPresses++;
       }
+    }
 
-      // Show the next trial
-      currentTrial++;
-      showTrial();
-    }, trialTime);
-  }
+    // Show the next trial
+    currentTrial++;
+    showTrial();
+  }, trialTime);
 }
 
 /**

@@ -68,8 +68,7 @@ function run(){
     if (e.keyCode === 0 || e.keyCode === 32) {
 
       // Record the response time for the first button press
-      if(beforeOrAfter !== 'middle'){
-        buttonPressed = true;
+      if(beforeOrAfter !== 'middle' && !buttonPressed){
         var responseTime = Date.now() - trialStartTime;
         if(trials[currentTrial] === 3){
           stats[beforeOrAfter].goodResponseTimes.push(responseTime);
@@ -78,8 +77,7 @@ function run(){
         }
       }
 
-      // Move to next trial when the button is pressed
-      endTrial();
+      buttonPressed = true;
 
     }
   });
